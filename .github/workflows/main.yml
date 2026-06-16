@@ -12,13 +12,13 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install IPATool
+      - name: Install IPATool v2.1.4
         run: |
           ARCH=$(uname -m)
           [ "$ARCH" = "arm64" ] && IPATOOL_ARCH="arm64" || IPATOOL_ARCH="amd64"
 
           curl -fL -o ipatool.tar.gz \
-            "https://github.com/majd/ipatool/releases/download/v2.3.0/ipatool-2.3.0-macos-${IPATOOL_ARCH}.tar.gz"
+            "https://github.com/majd/ipatool/releases/download/v2.1.4/ipatool-2.1.4-macos-${IPATOOL_ARCH}.tar.gz"
 
           mkdir -p ipatool_extract
           tar -xzf ipatool.tar.gz -C ipatool_extract
@@ -30,11 +30,9 @@ jobs:
 
       - name: Unlock macOS Keychain
         run: |
-          # Create a dedicated build keychain so ipatool can store credentials
           security create-keychain -p "ci-build" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "ci-build" build.keychain
-          # Keep it unlocked for the duration of the job (timeout in seconds)
           security set-keychain-settings -t 3600 -u build.keychain
 
       - name: Authenticate
@@ -45,6 +43,7 @@ jobs:
           ipatool auth login \
             --email "$APPLE_ID" \
             --password "$APPLE_APP_PASSWORD" \
+            --country CA \
             --non-interactive \
             --verbose
 
