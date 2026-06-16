@@ -1,15 +1,10 @@
-name: Apple Authentication and Download IPA
+name: Download Decrypted IPA
 on:
   workflow_dispatch:
-    inputs:
-      auth_code:
-        description: "Apple 2FA code (skip if using app-specific password)"
-        required: false
-        type: string
 
 jobs:
   auth_and_download:
-    runs-on: macos-15          # pinned to arm64 — matches the binary you download
+    runs-on: macos-15
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -19,7 +14,6 @@ jobs:
 
       - name: Install IPATool
         run: |
-          # Detect arch so this works on both macos-13 (x86) and macos-14/15 (arm64)
           ARCH=$(uname -m)
           [ "$ARCH" = "arm64" ] && IPATOOL_ARCH="arm64" || IPATOOL_ARCH="amd64"
 
@@ -30,44 +24,37 @@ jobs:
           tar -xzf ipatool.tar.gz -C ipatool_extract
 
           IPATOOL_BIN=$(find ipatool_extract -name "ipatool*" -type f | head -1)
-          if [ -z "$IPATOOL_BIN" ]; then
-            echo "ERROR: binary not found after extraction"
-            find ipatool_extract
-            exit 1
-          fi
-
           chmod +x "$IPATOOL_BIN"
           sudo mv "$IPATOOL_BIN" /usr/local/bin/ipatool
           ipatool --version
 
+      - name: Unlock macOS Keychain
+        run: |
+          # Create a dedicated build keychain so ipatool can store credentials
+          security create-keychain -p "ci-build" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "ci-build" build.keychain
+          # Keep it unlocked for the duration of the job (timeout in seconds)
+          security set-keychain-settings -t 3600 -u build.keychain
+
       - name: Authenticate
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
-          # Use APPLE_APP_PASSWORD (app-specific) if available, else fall back to main password
-          APPLE_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD || secrets.APPLE_PASSWORD }}
-          AUTH_CODE: ${{ inputs.auth_code }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: |
-          if [ -n "$AUTH_CODE" ]; then
-            echo "Logging in with 2FA code..."
-            ipatool auth login \
-              --email "$APPLE_ID" \
-              --password "$APPLE_PASSWORD" \
-              --auth-code "$AUTH_CODE" \
-              --non-interactive
-          else
-            echo "Logging in (app-specific password, no 2FA needed)..."
-            ipatool auth login \
-              --email "$APPLE_ID" \
-              --password "$APPLE_PASSWORD" \
-              --non-interactive
-          fi
+          ipatool auth login \
+            --email "$APPLE_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --non-interactive \
+            --verbose
 
       - name: Download IPA
         run: |
           ipatool download \
             --bundle-id com.blutron.power \
             --country CA \
-            --output ./
+            --output ./ \
+            --verbose
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
