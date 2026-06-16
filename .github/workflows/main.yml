@@ -13,9 +13,11 @@ jobs:
       - name: Download and Install IPATool Directly
         run: |
           curl -L -o ipatool.tar.gz https://github.com/majd/ipatool/releases/download/v2.3.0/ipatool-2.3.0-macos-arm64.tar.gz
-          tar -xzf ipatool.tar.gz
-          chmod +x ipatool
-          sudo mv ipatool /usr/local/bin/
+          mkdir -p ipatool_extract
+          tar -xzf ipatool.tar.gz -C ipatool_extract
+          IPATOOL_BIN=$(find ipatool_extract -name "ipatool" -type f)
+          chmod +x "$IPATOOL_BIN"
+          sudo mv "$IPATOOL_BIN" /usr/local/bin/ipatool
 
       - name: Request Login and Force 2FA Push
         env:
