@@ -5,15 +5,14 @@ on:
   push:
     paths:
       - 'action.yml'
-      - '.github/workflows/build.yml'
+      - '.github/workflows/build1.yml'
 
 jobs:
   build:
     strategy:
       matrix:
         url:
-          - "https://apps.apple.com/us/app/reddit/id1064216828"
-          - "https://apps.apple.com/us/app/twitch-live-streaming/id460177396"
+          - "https://apps.apple.com/ca/app/blutron/id1623293168"
         path:
           - App.ipa
           - ''
