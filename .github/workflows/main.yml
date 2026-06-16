@@ -1,0 +1,38 @@
+name: Apple 2FA Authentication and Download Decrypted IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  auth_and_download:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download and Install IPATool Directly
+        run: |
+          curl -L -o ipatool.tar.gz https://github.com/majd/ipatool/releases/download/v2.3.0/ipatool-2.3.0-macos-arm64.tar.gz
+          tar -xzf ipatool.tar.gz
+          chmod +x ipatool
+          sudo mv ipatool /usr/local/bin/
+
+      - name: Request Login and Force 2FA Push
+        env:
+          APPLE_ID: "${{ secrets.APPLE_ID }}"
+          APPLE_PASSWORD: "${{ secrets.APPLE_PASSWORD }}"
+        run: |
+          ipatool auth login --email "$APPLE_ID" --password "$APPLE_PASSWORD"
+
+      - name: Download and Decrypt IPA
+        env:
+          APPLE_ID: "${{ secrets.APPLE_ID }}"
+          APPLE_PASSWORD: "${{ secrets.APPLE_PASSWORD }}"
+        run: |
+          ipatool download --bundle-id com.blutron.power --country CA --output ./
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blutron-decrypted-ipa
+          path: "*.ipa"
