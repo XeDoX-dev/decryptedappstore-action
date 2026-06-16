@@ -1,31 +1,25 @@
-name: CI
+name: Download Decrypted IPA
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'action.yml'
-      - '.github/workflows/build1.yml'
 
 jobs:
-  build:
+  download:
     runs-on: macos-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Download IPA
-        id: download
-        uses: level3tjg/decryptedappstore-action@main
+      - name: Download and Decrypt IPA
+        uses: asdfzxcvbn/ipatool-action@v1.0.1
         with:
-          appstore_url: "https://apps.apple.com/ca/app/blutron/id1623293168"
-          cache: false
-          token: "${{ secrets.SESSION_TOKEN }}"
+          bundle_id: "com.blutron.power"
+          country: "CA"
+          apple_id: "${{ secrets.APPLE_ID }}"
+          apple_password: "${{ secrets.APPLE_PASSWORD }}"
 
-      - name: Upload Decrypted IPA Artifact
+      - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: blutron-decrypted-ipa
-          path: |
-            *.ipa
-            output/*.ipa
+          path: "*.ipa"
