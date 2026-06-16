@@ -15,7 +15,18 @@ jobs:
           curl -L -o ipatool.tar.gz https://github.com/majd/ipatool/releases/download/v2.3.0/ipatool-2.3.0-macos-arm64.tar.gz
           mkdir -p ipatool_extract
           tar -xzf ipatool.tar.gz -C ipatool_extract
-          IPATOOL_BIN=$(find ipatool_extract -name "ipatool" -type f)
+          
+          # Debug: Show what was extracted
+          echo "Extracted contents:"
+          find ipatool_extract -type f
+          
+          # Find and validate the binary
+          IPATOOL_BIN=$(find ipatool_extract -name "ipatool" -type f | head -1)
+          if [ -z "$IPATOOL_BIN" ]; then
+            echo "ERROR: ipatool binary not found"
+            exit 1
+          fi
+          
           chmod +x "$IPATOOL_BIN"
           sudo mv "$IPATOOL_BIN" /usr/local/bin/ipatool
 
